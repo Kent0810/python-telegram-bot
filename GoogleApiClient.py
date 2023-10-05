@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import os.path
-import google.auth
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -12,19 +11,9 @@ from googleapiclient.errors import HttpError
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
-# The ID and range of a sample spreadsheet.
-SAMPLE_SPREADSHEET_ID = '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms'
-SAMPLE_RANGE_NAME = 'Class Data!A2:E'
 
-
-def main():
-    """Shows basic usage of the Sheets API.
-    Prints values from a sample spreadsheet.
-    """
+def get_credentials():
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
     if os.path.exists('token.json'):
         creds = Credentials.from_authorized_user_file('token.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
@@ -38,6 +27,35 @@ def main():
         # Save the credentials for the next run
         with open('token.json', 'w') as token:
             token.write(creds.to_json())
+
+    return creds
+
+
+def append_values(spreadsheet_id, range_name, value_input_option,
+                  _values):
+
+    creds = get_credentials()
+    try:
+        service = build('sheets', 'v4', credentials=creds)
+        values = [
+            _values
+            # Additional rows ...
+        ]
+        body = {
+            'values': values
+        }
+        result = service.spreadsheets().values().append(
+            spreadsheetId=spreadsheet_id, range=range_name,
+            valueInputOption=value_input_option, body=body).execute()
+        print(f"{result.get('updatedCells')} cells updated.")
+        return result
+    except HttpError as error:
+        print(f"An error occurred: {error}")
+        return error
+
+
+def main():
+    creds = get_credentials()
 
     try:
         service = build('sheets', 'v4', credentials=creds)
@@ -56,7 +74,3 @@ def main():
         return spreadsheet.get('spreadsheetId')
     except HttpError as err:
         print(err)
-
-
-if __name__ == '__main__':
-    main()

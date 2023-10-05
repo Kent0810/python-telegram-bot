@@ -3,6 +3,22 @@ from typing import Final
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, filters, MessageHandler
 
+import json
+import datetime
+from GoogleApiClient import append_values
+
+SHEETS_ID = "1UvwyiW-cLGHEy-nbv2YeCzXvGFn7DTN7tQDAOUDfyt4"
+
+
+################################# TO-DO ###############################
+
+# 1. Add authentication
+# 2. Allow user to create, store their sheet info on their own Google Account
+# 3. This is just the Demo for Anh Kent, not finished yet (30%)
+# 4. Check for bug...!!!
+
+#######################################################################
+
 
 class Expend:
     def __init__(self) -> None:
@@ -27,6 +43,7 @@ BOT_USERNAME: Final = "@KentExpendBot"
 
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
     await update.message.reply_text("Hello! Thanks for using ExpendBot! I am Kent!")
 
 
@@ -61,12 +78,25 @@ async def send_expend(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Please fill in all the infomation, or type /help to get help, Thank You :>")
         return
 
+    current_date = datetime.date.today()
+    current_date_str = current_date.strftime("%Y-%m-%d")
+
+    my_json = json.dumps(current_date_str)
+    responseArray.append(my_json)
+
+    # TO DO: INSTEAD OF PUSHING TO A RESPONSE ARRAY, MAKE IT INTO AN OBJECT
     expend.set_expend_info(
         responseArray[0], responseArray[1], responseArray[2], responseArray[3])
+
+    append_values(SHEETS_ID, "A7:F700", "USER_ENTERED", responseArray)
 
     expend.print_expend_info()
 
     await update.message.reply_text("Thank You, I got it!")
+
+
+async def get_sheet_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Here is your google sheet: https://docs.google.com/spreadsheets/d/1UvwyiW-cLGHEy-nbv2YeCzXvGFn7DTN7tQDAOUDfyt4/edit?usp=sharing")
 
 
 async def error(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,6 +109,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler('start', start_command))
     app.add_handler(CommandHandler('help', help_command))
     app.add_handler(CommandHandler('ex', send_expend))
+    app.add_handler(CommandHandler('get_sheet', get_sheet_link))
 
     app.add_handler(MessageHandler(filters.TEXT, handle_message))
 
